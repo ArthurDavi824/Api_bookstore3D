@@ -7,6 +7,7 @@ import './models/associations.js'
 
 //Rotas
 import autorRoutes from "./routes/autorRoutes.js"
+import livroRoutes from "./routes/livroRoutes.js"
 
 const app = express();
 
@@ -22,12 +23,13 @@ app.use(express.json());
 conn
   .sync()
   .then(() => {
-    console.log("Banco de dados conectado 😎");
+    console.log("Banco de dados conectado 🐻");
   })
   .catch((error) => console.log(error));
 
 //Usando as rotas
 app.use("/api/autores", autorRoutes)
+app.use("/api/livros", livroRoutes)
 
 app.get("/", (request, response) => {
   response.status(200).json({ mensagem: "Olá, Mundo" });
