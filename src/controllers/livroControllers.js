@@ -1,5 +1,5 @@
 //importar os dois modelos select JOINS 
-import { response } from "express"
+import { request, response } from "express"
 import { autorModel, livroModel } from "../models/associations.js"
 
 export const cadastrarLivro = async (request, response) => {
@@ -109,13 +109,60 @@ export const cadastrarLivro = async (request, response) => {
             include: {
                 model: autorModel,
                 attributes: { exclude: ["created_at", "updated_at"] },
-                through:{attributes: []}
+                through: { attributes: [] }
 
             }
         })
-        response.status(201).json({mensagem: "Livro cadastrado", livroComAutores})
+        response.status(201).json({ mensagem: "Livro cadastrado", livroComAutores })
     } catch (error) {
         console.log(error)
-        response.status(500).json({mensagem: "Erro interno ao cadastrar livro"})
+        response.status(500).json({ mensagem: "Erro interno ao cadastrar livro" })
     }
 };
+
+export const listarTodosLivros = async (request, response) => {
+    const page = parseInt(request.query.page) || 1;
+    const limit = parseInt(request.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    try {
+        const livros = await livroModel.findAndCountAll({
+            include: {
+                model: autorModel,
+                through: { attributes: [] }
+            },
+            offset,
+            limit
+        })
+        console.log(livros.count)
+        console.log(livros.rows)
+
+        const livrosFormatados = livros.rows.map((livro) => {
+            return {
+                id: livro.id,
+                titulo: livro.titulo,
+                isbn: livro.isbn,
+                descricao: livro.descricao,
+                ano_publicacao: livro.ano_publicacao,
+                genero: livro.genero,
+                quantidade_total: livro.quantidade_total,
+                quantidade_disponivel: livro.quantidade_disponivel,
+                autores: livro.autores.map((autor) => ({
+                    id: autor.id,
+                    nome: autor.nome
+                }))
+            }
+        })
+        const totalDePaginas = Math.ceil(livros.count / limit)
+        response.status(200).json({
+            totalLivros: livros.count,
+            totalPaginas: totalDePaginas,
+            paginaAtual: page,
+            livrosPorPagina: limit,
+            livros: livrosFormatados
+        })
+    } catch (error) {
+        console.log(error)
+        response.status(500).json({ mensagem: "Erro ao buscar livros" })
+    }
+}
